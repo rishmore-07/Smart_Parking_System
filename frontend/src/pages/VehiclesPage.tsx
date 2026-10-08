@@ -5,12 +5,14 @@ import type { Vehicle, VehicleType } from '../types';
 import { 
   Car, 
   Plus, 
+  Pencil,
   Trash2, 
   Star, 
   Zap, 
   Bike, 
   Truck, 
   AlertCircle, 
+  CheckCircle2,
   X
 } from 'lucide-react';
 
@@ -18,9 +20,13 @@ export const VehiclesPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // New vehicle form state
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+
+  // Form state
   const [formData, setFormData] = useState<VehicleCreateInput>({
     license_plate: '',
     make: '',
@@ -51,29 +57,89 @@ export const VehiclesPage: React.FC = () => {
     fetchVehicles();
   }, []);
 
-  const handleCreateVehicle = async (e: React.FormEvent) => {
+  const openAddModal = () => {
+    setEditingVehicle(null);
+    setFormData({
+      license_plate: '',
+      make: '',
+      model: '',
+      color: '',
+      vehicle_type: 'car',
+      is_default: vehicles.length === 0,
+    });
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setFormData({
+      license_plate: vehicle.license_plate,
+      make: vehicle.make,
+      model: vehicle.model,
+      color: vehicle.color || '',
+      vehicle_type: vehicle.vehicle_type,
+      is_default: vehicle.is_default,
+    });
+    setFormError(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingVehicle(null);
+    setFormError(null);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+
+    if (!formData.license_plate.trim() || !formData.make.trim() || !formData.model.trim()) {
+      setFormError('Please fill in license plate, make, and model.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const res = await vehicleService.create(formData);
-      if (res.success) {
-        setIsModalOpen(false);
-        setFormData({
-          license_plate: '',
-          make: '',
-          model: '',
-          color: '',
-          vehicle_type: 'car',
-          is_default: false,
+      if (editingVehicle) {
+        // Update vehicle
+        const res = await vehicleService.update(editingVehicle.id, {
+          license_plate: formData.license_plate.toUpperCase().trim(),
+          make: formData.make.trim(),
+          model: formData.model.trim(),
+          color: formData.color?.trim() || undefined,
+          vehicle_type: formData.vehicle_type,
+          is_default: formData.is_default,
         });
-        await fetchVehicles();
+        if (res.success) {
+          closeModal();
+          setNotification({ type: 'success', text: `Vehicle ${res.data.license_plate} updated successfully.` });
+          await fetchVehicles();
+        } else {
+          setFormError(res.message || 'Could not update vehicle');
+        }
       } else {
-        setFormError(res.message || 'Could not save vehicle');
+        // Create vehicle
+        const res = await vehicleService.create({
+          license_plate: formData.license_plate.toUpperCase().trim(),
+          make: formData.make.trim(),
+          model: formData.model.trim(),
+          color: formData.color?.trim() || undefined,
+          vehicle_type: formData.vehicle_type,
+          is_default: formData.is_default,
+        });
+        if (res.success) {
+          closeModal();
+          setNotification({ type: 'success', text: `Vehicle ${res.data.license_plate} registered successfully.` });
+          await fetchVehicles();
+        } else {
+          setFormError(res.message || 'Could not save vehicle');
+        }
       }
     } catch (err: any) {
-      setFormError(err.message || 'Error creating vehicle');
+      setFormError(err.message || 'Error processing vehicle request.');
     } finally {
       setIsSubmitting(false);
     }
@@ -82,19 +148,21 @@ export const VehiclesPage: React.FC = () => {
   const handleSetDefault = async (id: number) => {
     try {
       await vehicleService.setDefault(id);
+      setNotification({ type: 'success', text: 'Default vehicle updated.' });
       await fetchVehicles();
     } catch (err: any) {
-      alert(err.message || 'Failed to update default vehicle');
+      setNotification({ type: 'error', text: err.message || 'Failed to update default vehicle' });
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to remove this vehicle profile?')) return;
+  const handleDelete = async (id: number, plate: string) => {
+    if (!window.confirm(`Are you sure you want to remove vehicle ${plate}?`)) return;
     try {
       await vehicleService.delete(id);
+      setNotification({ type: 'success', text: `Vehicle ${plate} removed from your garage.` });
       await fetchVehicles();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete vehicle');
+      setNotification({ type: 'error', text: err.message || 'Failed to delete vehicle' });
     }
   };
 
@@ -106,6 +174,8 @@ export const VehiclesPage: React.FC = () => {
         return <Bike className="w-5 h-5 text-amber-600" />;
       case 'truck':
         return <Truck className="w-5 h-5 text-blue-600" />;
+      case 'suv':
+        return <Car className="w-5 h-5 text-indigo-600" />;
       default:
         return <Car className="w-5 h-5 text-[#0F766E]" />;
     }
@@ -130,13 +200,38 @@ export const VehiclesPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white text-sm font-semibold shadow-xs transition-all"
+          onClick={openAddModal}
+          className="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white text-sm font-semibold shadow-xs transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Add Vehicle</span>
         </button>
       </div>
+
+      {notification && (
+        <div
+          className={`p-4 rounded-xl text-sm flex items-center justify-between border ${
+            notification.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}
+        >
+          <div className="flex items-center space-x-2">
+            {notification.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+            ) : (
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600" />
+            )}
+            <span>{notification.text}</span>
+          </div>
+          <button
+            onClick={() => setNotification(null)}
+            className="text-xs font-medium hover:underline ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center space-x-2">
@@ -149,7 +244,7 @@ export const VehiclesPage: React.FC = () => {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 bg-white rounded-2xl border border-slate-200 p-6 animate-pulse space-y-4">
+            <div key={i} className="h-48 bg-white rounded-2xl border border-slate-200 p-6 animate-pulse space-y-4">
               <div className="h-4 bg-slate-200 rounded w-1/3" />
               <div className="h-6 bg-slate-200 rounded w-2/3" />
               <div className="h-4 bg-slate-200 rounded w-1/2" />
@@ -167,8 +262,8 @@ export const VehiclesPage: React.FC = () => {
             Add your primary vehicle to enable 1-click spot reservations and license plate entry recognition.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-5 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white text-sm font-semibold shadow-xs transition-all inline-flex items-center space-x-2"
+            onClick={openAddModal}
+            className="px-5 py-2.5 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white text-sm font-semibold shadow-xs transition-all inline-flex items-center space-x-2 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Register First Vehicle</span>
@@ -197,7 +292,7 @@ export const VehiclesPage: React.FC = () => {
                   ) : (
                     <button
                       onClick={() => handleSetDefault(v.id)}
-                      className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+                      className="text-xs text-slate-400 hover:text-[#0F766E] transition-colors font-medium cursor-pointer"
                     >
                       Make Default
                     </button>
@@ -211,7 +306,7 @@ export const VehiclesPage: React.FC = () => {
                   <h3 className="font-display font-bold text-xl text-slate-900 leading-tight">
                     {v.model}
                   </h3>
-                  <div className="pt-2 flex items-center space-x-2">
+                  <div className="pt-2 flex flex-wrap items-center gap-2">
                     <span className="font-mono font-bold text-sm bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-slate-800 tracking-wider">
                       {v.license_plate}
                     </span>
@@ -225,23 +320,32 @@ export const VehiclesPage: React.FC = () => {
               </div>
 
               <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span className="capitalize px-2 py-0.5 rounded bg-slate-100 font-medium">
+                <span className="capitalize px-2 py-0.5 rounded bg-slate-100 font-medium text-slate-700">
                   {v.vehicle_type.toUpperCase()}
                 </span>
-                <button
-                  onClick={() => handleDelete(v.id)}
-                  title="Remove vehicle"
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => openEditModal(v)}
+                    title="Edit vehicle details"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#0F766E] hover:bg-emerald-50 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(v.id, v.license_plate)}
+                    title="Remove vehicle"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Add Vehicle Modal */}
+      {/* Add / Edit Vehicle Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-6 animate-in fade-in zoom-in duration-150">
@@ -251,12 +355,12 @@ export const VehiclesPage: React.FC = () => {
                   <Car className="w-4 h-4" />
                 </div>
                 <h3 className="font-display font-bold text-lg text-slate-900">
-                  Register Vehicle
+                  {editingVehicle ? 'Edit Vehicle Details' : 'Register New Vehicle'}
                 </h3>
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"
+                onClick={closeModal}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -269,7 +373,7 @@ export const VehiclesPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleCreateVehicle} className="space-y-4">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
                   License Plate Number *
@@ -287,12 +391,12 @@ export const VehiclesPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    Make *
+                    Manufacturer / Make *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Tesla / Hyundai"
+                    placeholder="e.g. Hyundai"
                     value={formData.make}
                     onChange={(e) => setFormData({ ...formData, make: e.target.value })}
                     className="block w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E]"
@@ -305,7 +409,7 @@ export const VehiclesPage: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Model 3 / Ioniq"
+                    placeholder="e.g. Ioniq 5"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     className="block w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E]"
@@ -324,7 +428,7 @@ export const VehiclesPage: React.FC = () => {
                     className="block w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E]"
                   >
                     <option value="car">Car (Standard)</option>
-                    <option value="suv">SUV / Cross</option>
+                    <option value="suv">SUV / Crossover</option>
                     <option value="ev">Electric Vehicle (EV)</option>
                     <option value="bike">Motorcycle / Bike</option>
                     <option value="truck">Light Commercial</option>
@@ -332,11 +436,11 @@ export const VehiclesPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    Color (Optional)
+                    Colour (Optional)
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Midnight Blue"
+                    placeholder="e.g. Matte Gold"
                     value={formData.color}
                     onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                     className="block w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E]"
@@ -350,9 +454,9 @@ export const VehiclesPage: React.FC = () => {
                   id="is_default"
                   checked={formData.is_default}
                   onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-                  className="rounded text-[#0F766E] focus:ring-[#0F766E]"
+                  className="rounded text-[#0F766E] focus:ring-[#0F766E] cursor-pointer"
                 />
-                <label htmlFor="is_default" className="text-xs text-slate-700 font-medium">
+                <label htmlFor="is_default" className="text-xs text-slate-700 font-medium cursor-pointer">
                   Set as primary/default vehicle for reservations
                 </label>
               </div>
@@ -360,17 +464,17 @@ export const VehiclesPage: React.FC = () => {
               <div className="flex items-center justify-end space-x-2 pt-4 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors"
+                  onClick={closeModal}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-[#0F766E] hover:bg-[#0D655E] rounded-xl shadow-xs transition-all disabled:opacity-60"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-[#0F766E] hover:bg-[#0D655E] rounded-xl shadow-xs transition-all disabled:opacity-60 cursor-pointer"
                 >
-                  {isSubmitting ? 'Registering...' : 'Save Vehicle'}
+                  {isSubmitting ? 'Saving...' : editingVehicle ? 'Update Vehicle' : 'Register Vehicle'}
                 </button>
               </div>
             </form>

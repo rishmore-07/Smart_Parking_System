@@ -53,6 +53,7 @@ def get_vehicle_by_id(
 
 
 @router.put("/{vehicle_id}", response_model=APIResponse[VehicleResponse])
+@router.patch("/{vehicle_id}", response_model=APIResponse[VehicleResponse])
 def update_vehicle(
     vehicle_id: int,
     vehicle_in: VehicleUpdate,
@@ -82,6 +83,7 @@ def delete_vehicle(
 
 
 @router.put("/{vehicle_id}/default", response_model=APIResponse[VehicleResponse])
+@router.patch("/{vehicle_id}/default", response_model=APIResponse[VehicleResponse])
 def set_default_vehicle(
     vehicle_id: int,
     current_user: User = Depends(get_current_user),

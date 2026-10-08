@@ -14,6 +14,12 @@ class VehicleRepository(BaseRepository[Vehicle]):
     def get_by_user_and_id(self, db: Session, user_id: int, vehicle_id: int) -> Optional[Vehicle]:
         return db.query(Vehicle).filter(Vehicle.id == vehicle_id, Vehicle.user_id == user_id).first()
 
+    def get_by_user_and_plate(self, db: Session, user_id: int, license_plate: str) -> Optional[Vehicle]:
+        return db.query(Vehicle).filter(
+            Vehicle.user_id == user_id,
+            Vehicle.license_plate == license_plate
+        ).first()
+
     def get_default_vehicle(self, db: Session, user_id: int) -> Optional[Vehicle]:
         return db.query(Vehicle).filter(Vehicle.user_id == user_id, Vehicle.is_default == True).first()
 

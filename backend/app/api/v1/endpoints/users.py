@@ -5,8 +5,9 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, require_admin
 from app.models.user import User, UserRole
 from app.schemas.common import APIResponse
-from app.schemas.user import UserResponse, UserUpdate, PasswordChange
+from app.schemas.user import UserResponse, UserUpdate, PasswordChange, UserRoleUpdate
 from app.services.user_service import user_service
+from app.services.auth_service import auth_service
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -63,4 +64,20 @@ def list_users_admin(
         success=True,
         message="Users list retrieved.",
         data=users
+    )
+
+
+@router.put("/{user_id}/role", response_model=APIResponse[UserResponse])
+@router.patch("/{user_id}/role", response_model=APIResponse[UserResponse])
+def update_user_role(
+    user_id: int,
+    role_in: UserRoleUpdate,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    updated = auth_service.provision_user_role(db, user_id, role_in.role, current_admin)
+    return APIResponse(
+        success=True,
+        message=f"User role updated to {role_in.role.value}.",
+        data=updated
     )

@@ -19,14 +19,14 @@ class AuthService:
                 detail="A user with this email already exists."
             )
 
-        # Hash password and create user
+        # Hash password and create user - always DRIVER for public registration
         hashed_pw = get_password_hash(user_in.password)
         user = User(
             email=user_in.email.lower().strip(),
             hashed_password=hashed_pw,
             full_name=user_in.full_name.strip(),
             phone_number=user_in.phone_number,
-            role=user_in.role or UserRole.DRIVER,
+            role=UserRole.DRIVER,  # Always DRIVER for public registrations
             is_active=True,
             is_verified=False,
             auth_provider="local",
@@ -57,6 +57,38 @@ class AuthService:
             user=created_user,
         )
         return created_user, token
+
+    def logout(self, db: Session, user: User, ip_address: Optional[str] = None) -> None:
+        audit_repo.log(
+            db,
+            action="USER_LOGOUT",
+            user_id=user.id,
+            entity_type="User",
+            entity_id=str(user.id),
+            details=f"User {user.email} logged out",
+            ip_address=ip_address,
+        )
+
+    def provision_user_role(self, db: Session, target_user_id: int, new_role: UserRole, admin_user: User) -> User:
+        target_user = user_repo.get_by_id(db, target_user_id)
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Target user not found."
+            )
+        old_role = target_user.role
+        target_user.role = new_role
+        db.commit()
+        db.refresh(target_user)
+        audit_repo.log(
+            db,
+            action="USER_ROLE_PROVISIONED",
+            user_id=admin_user.id,
+            entity_type="User",
+            entity_id=str(target_user.id),
+            details=f"Admin {admin_user.email} updated role of {target_user.email} from {old_role} to {new_role}",
+        )
+        return target_user
 
     def login(self, db: Session, login_in: UserLogin, ip_address: Optional[str] = None) -> Tuple[User, Token]:
         user = user_repo.get_by_email(db, login_in.email)

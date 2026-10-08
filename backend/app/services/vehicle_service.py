@@ -9,6 +9,14 @@ from app.schemas.vehicle import VehicleCreate, VehicleUpdate
 
 class VehicleService:
     def create_vehicle(self, db: Session, user_id: int, vehicle_in: VehicleCreate) -> Vehicle:
+        formatted_plate = vehicle_in.license_plate.upper().strip()
+        existing_plate = vehicle_repo.get_by_user_and_plate(db, user_id, formatted_plate)
+        if existing_plate:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A vehicle with license plate '{formatted_plate}' is already registered to your account."
+            )
+
         existing_vehicles = vehicle_repo.get_by_user_id(db, user_id)
         
         # If this is the user's first vehicle or if marked default, make it default
@@ -18,7 +26,7 @@ class VehicleService:
 
         vehicle = Vehicle(
             user_id=user_id,
-            license_plate=vehicle_in.license_plate.upper().strip(),
+            license_plate=formatted_plate,
             make=vehicle_in.make.strip(),
             model=vehicle_in.model.strip(),
             color=vehicle_in.color.strip() if vehicle_in.color else None,
@@ -55,7 +63,16 @@ class VehicleService:
         vehicle = self.get_vehicle_by_id(db, user_id, vehicle_id)
 
         if update_in.license_plate is not None:
-            vehicle.license_plate = update_in.license_plate.upper().strip()
+            new_plate = update_in.license_plate.upper().strip()
+            if new_plate != vehicle.license_plate:
+                existing_plate = vehicle_repo.get_by_user_and_plate(db, user_id, new_plate)
+                if existing_plate and existing_plate.id != vehicle.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"A vehicle with license plate '{new_plate}' is already registered to your account."
+                    )
+            vehicle.license_plate = new_plate
+
         if update_in.make is not None:
             vehicle.make = update_in.make.strip()
         if update_in.model is not None:

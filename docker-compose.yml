@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: smart_parking_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smart_parking}
+      POSTGRES_USER: ${POSTGRES_USER:-parking_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parking_password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parking_user} -d ${POSTGRES_DB:-smart_parking}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart_parking_backend
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://parking_user:parking_password@postgres:5432/smart_parking}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-smart_parking_super_secret_jwt_key_2026_change_in_production}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: ./entrypoint.sh
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart_parking_frontend
+    ports:
+      - "5174:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001/api/v1}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

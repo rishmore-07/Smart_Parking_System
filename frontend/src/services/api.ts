@@ -1,4 +1,4 @@
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export class ApiError extends Error {
   status: number;
@@ -35,7 +35,22 @@ export async function request<T>(
   const data = isJson ? await response.json() : await response.text();
 
   if (!response.ok) {
-    const errorMsg = data?.detail || data?.message || response.statusText || 'Request failed';
+    if (response.status === 401 && token) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+    }
+
+    let errorMsg = 'Request failed';
+    if (typeof data?.detail === 'string') {
+      errorMsg = data.detail;
+    } else if (Array.isArray(data?.detail) && data.detail.length > 0) {
+      errorMsg = data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ');
+    } else if (data?.message) {
+      errorMsg = data.message;
+    } else if (response.statusText) {
+      errorMsg = response.statusText;
+    }
+
     throw new ApiError(errorMsg, response.status, data);
   }
 

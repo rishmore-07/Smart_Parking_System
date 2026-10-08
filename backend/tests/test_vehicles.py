@@ -78,3 +78,86 @@ def test_vehicle_update_and_delete(client):
     # Ensure it no longer exists
     get_res = client.get(f"/api/v1/vehicles/{vehicle_id}", headers=headers)
     assert get_res.status_code == 404
+
+
+def test_duplicate_vehicle_registration_fails(client):
+    headers = get_auth_header(client, "driver_dup@example.com")
+
+    payload = {
+        "license_plate": "KA-05-MM-1111",
+        "make": "Toyota",
+        "model": "Camry",
+        "color": "White",
+        "vehicle_type": "car"
+    }
+
+    # 1. First registration should succeed
+    res1 = client.post("/api/v1/vehicles/", json=payload, headers=headers)
+    assert res1.status_code == 201
+
+    # 2. Duplicate registration with same license plate (same or different case) should fail with 400
+    res2 = client.post("/api/v1/vehicles/", json={
+        **payload,
+        "license_plate": "ka-05-mm-1111"
+    }, headers=headers)
+    assert res2.status_code == 400
+    assert "already registered" in res2.json()["detail"].lower()
+
+
+def test_prevent_cross_user_vehicle_access(client):
+    user1_headers = get_auth_header(client, "user1@example.com")
+    user2_headers = get_auth_header(client, "user2@example.com")
+
+    # User 1 creates vehicle
+    v_res = client.post("/api/v1/vehicles/", json={
+        "license_plate": "MH-01-U1-1111",
+        "make": "BMW",
+        "model": "3 Series",
+        "vehicle_type": "car"
+    }, headers=user1_headers)
+    assert v_res.status_code == 201
+    user1_v_id = v_res.json()["data"]["id"]
+
+    # User 2 attempts to get User 1's vehicle -> 404 Not Found
+    get_res = client.get(f"/api/v1/vehicles/{user1_v_id}", headers=user2_headers)
+    assert get_res.status_code == 404
+
+    # User 2 attempts to update User 1's vehicle -> 404 Not Found
+    update_res = client.put(f"/api/v1/vehicles/{user1_v_id}", json={
+        "color": "Hacked Color"
+    }, headers=user2_headers)
+    assert update_res.status_code == 404
+
+    # User 2 attempts to delete User 1's vehicle -> 404 Not Found
+    del_res = client.delete(f"/api/v1/vehicles/{user1_v_id}", headers=user2_headers)
+    assert del_res.status_code == 404
+
+    # User 2 lists vehicles -> only sees empty list (not User 1's vehicle)
+    list_res = client.get("/api/v1/vehicles/", headers=user2_headers)
+    assert list_res.status_code == 200
+    assert len(list_res.json()["data"]) == 0
+
+
+def test_vehicle_patch_and_default_toggle(client):
+    headers = get_auth_header(client, "driver_patch@example.com")
+
+    # Create vehicle
+    create_res = client.post("/api/v1/vehicles/", json={
+        "license_plate": "KA-03-PT-3333",
+        "make": "Kia",
+        "model": "Seltos",
+        "vehicle_type": "suv"
+    }, headers=headers)
+    v_id = create_res.json()["data"]["id"]
+
+    # PATCH vehicle
+    patch_res = client.patch(f"/api/v1/vehicles/{v_id}", json={
+        "color": "Graphite Grey"
+    }, headers=headers)
+    assert patch_res.status_code == 200
+    assert patch_res.json()["data"]["color"] == "Graphite Grey"
+
+    # PATCH set default
+    patch_def = client.patch(f"/api/v1/vehicles/{v_id}/default", headers=headers)
+    assert patch_def.status_code == 200
+    assert patch_def.json()["data"]["is_default"] is True

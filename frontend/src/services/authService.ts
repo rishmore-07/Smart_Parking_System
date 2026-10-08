@@ -25,6 +25,12 @@ export const authService = {
     });
   },
 
+  async logout(): Promise<APIResponse<{ user_id: number }>> {
+    return request<APIResponse<{ user_id: number }>>('/auth/logout', {
+      method: 'POST',
+    });
+  },
+
   async getMe(): Promise<APIResponse<User>> {
     return request<APIResponse<User>>('/auth/me');
   },

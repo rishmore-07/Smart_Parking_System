@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '../types';
+import { authService } from '../services/authService';
 
 interface AuthState {
   user: User | null;
@@ -9,7 +10,7 @@ interface AuthState {
   setAuth: (user: User, token: string) => void;
   setUser: (user: User) => void;
   logout: () => void;
-  initAuth: () => void;
+  initAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -30,20 +31,37 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    authService.logout().catch(() => {});
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
     set({ user: null, token: null, isAuthenticated: false, isLoading: false });
   },
 
-  initAuth: () => {
+  initAuth: async () => {
     const token = localStorage.getItem('auth_token');
     const userStr = localStorage.getItem('auth_user');
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);
         set({ user, token, isAuthenticated: true, isLoading: false });
+
+        // Verify with backend
+        try {
+          const res = await authService.getMe();
+          if (res.success && res.data) {
+            set({ user: res.data, isAuthenticated: true, isLoading: false });
+            localStorage.setItem('auth_user', JSON.stringify(res.data));
+            return;
+          }
+        } catch {
+          // Token expired or invalid
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+          return;
+        }
         return;
-      } catch (e) {
+      } catch {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
       }

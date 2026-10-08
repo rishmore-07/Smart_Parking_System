@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { authService } from '../../services/authService';
-import { Car, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
+import { Car, Lock, Mail, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,26 +11,41 @@ export const LoginPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const from = (location.state as any)?.from?.pathname || '/vehicles';
+  const from = (location.state as any)?.from?.pathname;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!email.trim() || !password) {
+      setError('Please provide both your email and password.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await authService.login({ email, password });
+      const response = await authService.login({ email: email.trim(), password });
       if (response.success && response.data) {
         setAuth(response.data.user, response.data.access_token);
-        navigate(from, { replace: true });
+        const userRole = response.data.user.role;
+        // Role-based navigation
+        if (from) {
+          navigate(from, { replace: true });
+        } else if (userRole === 'admin' || userRole === 'operator') {
+          navigate('/profile', { replace: true });
+        } else {
+          navigate('/vehicles', { replace: true });
+        }
       } else {
-        setError(response.message || 'Login failed');
+        setError(response.message || 'Login failed. Please check your credentials.');
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+      setError(err.message || 'Incorrect email or password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -124,13 +139,21 @@ export const LoginPage: React.FC = () => {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E] transition-all"
+                  className="block w-full pl-9 pr-10 py-2.5 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F766E]/20 focus:border-[#0F766E] transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

@@ -56,6 +56,21 @@ def google_auth(
     )
 
 
+@router.post("/logout", response_model=APIResponse[dict])
+def logout(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    ip_address = request.client.host if request.client else None
+    auth_service.logout(db, current_user, ip_address=ip_address)
+    return APIResponse(
+        success=True,
+        message="Logged out successfully.",
+        data={"user_id": current_user.id}
+    )
+
+
 @router.get("/me", response_model=APIResponse[UserResponse])
 def get_current_user_profile(
     current_user: User = Depends(get_current_user)

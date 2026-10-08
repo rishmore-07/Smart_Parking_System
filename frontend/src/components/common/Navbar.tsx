@@ -1,22 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { 
   Car, 
-  ShieldCheck, 
   LogOut, 
   Sparkles,
-  LayoutDashboard
+  MapPin,
+  CalendarDays,
+  Heart,
+  User as UserIcon,
+  Menu,
+  X
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+    setMobileMenuOpen(false);
   };
 
   const getRoleBadge = (role: string) => {
@@ -33,7 +39,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center space-x-2.5 group">
@@ -49,41 +55,82 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Navigation items */}
+        {/* Desktop Navigation items */}
         <nav className="hidden md:flex items-center space-x-1">
           <Link
             to="/"
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              location.pathname === '/' ? 'text-[#0F766E] bg-[#0F766E]/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              location.pathname === '/' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            Explore
+            Home
           </Link>
 
-          {isAuthenticated && (
-            <Link
-              to="/vehicles"
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors ${
-                location.pathname === '/vehicles' ? 'text-[#0F766E] bg-[#0F766E]/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <Car className="w-4 h-4" />
-              <span>My Vehicles</span>
-            </Link>
-          )}
+          <Link
+            to="/"
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-1.5 transition-colors"
+          >
+            <MapPin className="w-4 h-4 text-slate-400" />
+            <span>Find Parking</span>
+          </Link>
 
-          {isAuthenticated && (user?.role === 'operator' || user?.role === 'admin') && (
-            <div className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1 cursor-default">
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Operator Dashboard (Phase 4)</span>
-            </div>
-          )}
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/vehicles"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors ${
+                  location.pathname === '/vehicles' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Car className="w-4 h-4 text-[#0F766E]" />
+                <span>My Vehicles</span>
+              </Link>
 
-          {isAuthenticated && user?.role === 'admin' && (
-            <div className="px-3 py-1.5 rounded-lg text-sm font-medium text-purple-600/70 flex items-center space-x-1 cursor-default">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Admin Panel (Phase 4)</span>
-            </div>
+              <div 
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1.5 cursor-not-allowed"
+                title="Bookings management will be available in Phase 3"
+              >
+                <CalendarDays className="w-4 h-4 text-slate-300" />
+                <span>My Bookings</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-400 font-normal">Phase 3</span>
+              </div>
+
+              <div 
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1.5 cursor-not-allowed"
+                title="Saved facilities will be available in Phase 3"
+              >
+                <Heart className="w-4 h-4 text-slate-300" />
+                <span>Favourites</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-400 font-normal">Phase 3</span>
+              </div>
+
+              <Link
+                to="/profile"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors ${
+                  location.pathname === '/profile' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <UserIcon className="w-4 h-4 text-slate-400" />
+                <span>Profile</span>
+              </Link>
+            </>
+          ) : (
+            <>
+              <div 
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1.5 cursor-not-allowed"
+                title="Sign in required to view bookings"
+              >
+                <CalendarDays className="w-4 h-4 text-slate-300" />
+                <span>My Bookings</span>
+              </div>
+              <div 
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1.5 cursor-not-allowed"
+                title="Sign in required to view favourites"
+              >
+                <Heart className="w-4 h-4 text-slate-300" />
+                <span>Favourites</span>
+              </div>
+            </>
           )}
         </nav>
 
@@ -109,7 +156,7 @@ export const Navbar: React.FC = () => {
               <button
                 onClick={handleLogout}
                 title="Log out"
-                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -118,21 +165,107 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Link
                 to="/login"
-                className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+                className="px-3.5 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
               >
                 Log In
               </Link>
               <Link
                 to="/register"
-                className="px-4 py-2 text-sm font-medium text-white bg-[#0F766E] hover:bg-[#0D655E] rounded-xl shadow-sm transition-all flex items-center space-x-1.5"
+                className="px-3.5 py-2 text-sm font-medium text-white bg-[#0F766E] hover:bg-[#0D655E] rounded-xl shadow-xs transition-all flex items-center space-x-1.5"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Get Started</span>
               </Link>
             </div>
           )}
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 focus:outline-none"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile navigation drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-100 bg-white px-4 pt-2 pb-4 space-y-1">
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className={`block px-3 py-2 rounded-lg text-sm font-medium ${
+              location.pathname === '/' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600'
+            }`}
+          >
+            Home
+          </Link>
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600"
+          >
+            Find Parking
+          </Link>
+
+          {isAuthenticated ? (
+            <>
+              <Link
+                to="/vehicles"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 rounded-lg text-sm font-medium ${
+                  location.pathname === '/vehicles' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600'
+                }`}
+              >
+                My Vehicles
+              </Link>
+              <div className="px-3 py-2 text-sm font-medium text-slate-400 flex items-center justify-between">
+                <span>My Bookings</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100">Phase 3</span>
+              </div>
+              <div className="px-3 py-2 text-sm font-medium text-slate-400 flex items-center justify-between">
+                <span>Favourites</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100">Phase 3</span>
+              </div>
+              <Link
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 rounded-lg text-sm font-medium ${
+                  location.pathname === '/profile' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600'
+                }`}
+              >
+                Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log Out</span>
+              </button>
+            </>
+          ) : (
+            <div className="pt-2 border-t border-slate-100 space-y-1">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700"
+              >
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-[#0F766E] font-semibold"
+              >
+                Create Account
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 };

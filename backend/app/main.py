@@ -57,8 +57,9 @@ def health_check():
     )
 
 
-# Include API v1 Router
+# Include API v1 and base /api Routers
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix="/api")
 
 
 @app.exception_handler(Exception)
