@@ -57,18 +57,26 @@ export const LandingPage: React.FC = () => {
 
           {/* Call to Actions */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              to="/parking"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white font-medium shadow-sm transition-all flex items-center justify-center space-x-2"
+            >
+              <Car className="w-4 h-4" />
+              <span>Find Nearby Parking</span>
+            </Link>
+
             {!isAuthenticated ? (
               <>
                 <Link
                   to="/register"
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white font-medium shadow-sm transition-all flex items-center justify-center space-x-2"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-medium shadow-xs transition-all flex items-center justify-center space-x-2"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Create Driver Account</span>
+                  <Sparkles className="w-4 h-4 text-[#0F766E]" />
+                  <span>Create Account</span>
                 </Link>
                 <Link
                   to="/login"
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-medium shadow-xs transition-all flex items-center justify-center space-x-2"
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl hover:bg-slate-100 text-slate-700 font-medium transition-all flex items-center justify-center space-x-1"
                 >
                   <span>Sign In</span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
@@ -77,13 +85,14 @@ export const LandingPage: React.FC = () => {
             ) : (
               <Link
                 to="/vehicles"
-                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white font-medium shadow-sm transition-all flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-medium shadow-xs transition-all flex items-center justify-center space-x-2"
               >
-                <Car className="w-4 h-4" />
-                <span>Go to My Vehicles Garage</span>
+                <span>My Vehicles</span>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
               </Link>
             )}
           </div>
+
 
           {/* Quick Interactive Role Switcher Banner */}
           <div className="pt-6">

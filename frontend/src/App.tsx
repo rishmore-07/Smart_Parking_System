@@ -11,6 +11,8 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { VehiclesPage } from './pages/VehiclesPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { FindParkingPage } from './pages/FindParkingPage';
+import { FacilityDetailPage } from './pages/FacilityDetailPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
@@ -35,6 +37,9 @@ export const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<LandingPage />} />
+            <Route path="parking" element={<FindParkingPage />} />
+            <Route path="parking/:id" element={<FacilityDetailPage />} />
+            <Route path="facilities/:id" element={<FacilityDetailPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<RegisterPage />} />
             <Route
@@ -60,5 +65,6 @@ export const App: React.FC = () => {
     </QueryClientProvider>
   );
 };
+
 
 export default App;

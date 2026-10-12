@@ -1,0 +1,30 @@
+# Environment & Secret files
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+backend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.log
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

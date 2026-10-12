@@ -67,12 +67,17 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <Link
-            to="/"
-            className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center space-x-1.5 transition-colors"
+            to="/parking"
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors ${
+              location.pathname.startsWith('/parking')
+                ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
           >
-            <MapPin className="w-4 h-4 text-slate-400" />
+            <MapPin className="w-4 h-4 text-[#0F766E]" />
             <span>Find Parking</span>
           </Link>
+
 
           {isAuthenticated ? (
             <>
@@ -203,12 +208,13 @@ export const Navbar: React.FC = () => {
             Home
           </Link>
           <Link
-            to="/"
+            to="/parking"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600"
+            className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-[#0F766E]"
           >
             Find Parking
           </Link>
+
 
           {isAuthenticated ? (
             <>
