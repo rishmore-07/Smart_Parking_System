@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     # Razorpay (Test mode credentials)
     RAZORPAY_KEY_ID: str = "rzp_test_placeholder"
     RAZORPAY_KEY_SECRET: str = "rzp_test_secret_placeholder"
+    RAZORPAY_WEBHOOK_SECRET: str = "rzp_test_webhook_secret_placeholder"
+    RAZORPAY_MODE: str = "test"
 
     # OpenWeatherMap
     OPENWEATHER_API_KEY: str = ""

@@ -6,18 +6,18 @@ from app.models.base import TimestampMixin
 
 
 class PaymentStatus(str, enum.Enum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    REFUNDED = "refunded"
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    REFUNDED = "REFUNDED"
 
 
 class PaymentMethod(str, enum.Enum):
-    RAZORPAY = "razorpay"
-    WALLET = "wallet"
-    CARD = "card"
-    UPI = "upi"
-    TEST_MOCK = "test_mock"
+    RAZORPAY = "RAZORPAY"
+    WALLET = "WALLET"
+    CARD = "CARD"
+    UPI = "UPI"
+    TEST_MOCK = "TEST_MOCK"
 
 
 class Payment(Base, TimestampMixin):
@@ -38,7 +38,7 @@ class Payment(Base, TimestampMixin):
 
     # Relationships
     reservation = relationship("Reservation", back_populates="payment")
-    user = relationship("User")
+    user = relationship("User", back_populates="payments")
     receipt = relationship("Receipt", back_populates="payment", uselist=False, cascade="all, delete-orphan")
 
 

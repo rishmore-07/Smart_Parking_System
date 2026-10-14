@@ -13,6 +13,7 @@ import { VehiclesPage } from './pages/VehiclesPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { FindParkingPage } from './pages/FindParkingPage';
 import { FacilityDetailPage } from './pages/FacilityDetailPage';
+import { MyBookingsPage } from './pages/MyBookingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
@@ -47,6 +48,22 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={['driver', 'operator', 'admin']}>
                   <VehiclesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="bookings"
+              element={
+                <ProtectedRoute allowedRoles={['driver', 'operator', 'admin']}>
+                  <MyBookingsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="my-bookings"
+              element={
+                <ProtectedRoute allowedRoles={['driver', 'operator', 'admin']}>
+                  <MyBookingsPage />
                 </ProtectedRoute>
               }
             />

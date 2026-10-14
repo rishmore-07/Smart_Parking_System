@@ -11,7 +11,7 @@ from app.schemas.facility import (
 )
 from app.schemas.common import APIResponse
 from app.services.facility_service import facility_service
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_operator
 
 router = APIRouter(prefix="/facilities", tags=["Facilities"])
 parking_router = APIRouter(prefix="/parking", tags=["Parking Discovery"])
@@ -137,7 +137,7 @@ def list_facilities(
 def create_facility(
     facility_in: FacilityCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_operator),
 ):
     """
     Create a new parking facility. Only for authorized roles.

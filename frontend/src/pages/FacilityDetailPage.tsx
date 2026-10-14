@@ -17,11 +17,16 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+import { BookingModal } from '../components/booking/BookingModal';
+import { BookingConfirmationModal } from '../components/booking/BookingConfirmationModal';
+import type { Reservation } from '../types/reservation';
+
 export const FacilityDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const facilityId = parseInt(id || '0', 10);
   const [showReserveModal, setShowReserveModal] = useState(false);
+  const [confirmedReservation, setConfirmedReservation] = useState<Reservation | null>(null);
 
   const { data: facility, isLoading, isError } = useQuery({
     queryKey: ['facility-detail', facilityId],
@@ -286,45 +291,24 @@ export const FacilityDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Reservation Flow Coming in Phase 4 Modal */}
-      {showReserveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 animate-scaleUp">
-            <div className="w-12 h-12 rounded-2xl bg-[#0F766E]/10 flex items-center justify-center text-[#0F766E] mx-auto">
-              <Calendar className="w-6 h-6" />
-            </div>
+      {/* Live Phase 4 Reservation Flow Modal */}
+      <BookingModal
+        facility={facility}
+        isOpen={showReserveModal}
+        onClose={() => setShowReserveModal(false)}
+        onSuccess={(created) => {
+          setShowReserveModal(false);
+          setConfirmedReservation(created);
+        }}
+      />
 
-            <div className="text-center">
-              <h3 className="text-lg font-bold text-slate-900">Reservation Flow (Phase 4)</h3>
-              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                You have reached the reservation gateway for <strong className="text-slate-800">{facility.name}</strong>.
-                Spot locking, QR access pass generation, and digital payment integration are scheduled for implementation in <strong>Phase 4</strong>.
-              </p>
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-600 space-y-1.5">
-              <div className="flex justify-between">
-                <span>Facility:</span>
-                <span className="font-semibold text-slate-800">{facility.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Available Spots:</span>
-                <span className="font-semibold text-emerald-600">{facility.available_spaces} spaces</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Rate:</span>
-                <span className="font-semibold text-slate-800">₹{facility.price_per_hour}/hr</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowReserveModal(false)}
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
-            >
-              Understood, Back to Facility
-            </button>
-          </div>
-        </div>
+      {/* Booking Confirmation Receipt Modal */}
+      {confirmedReservation && (
+        <BookingConfirmationModal
+          reservation={confirmedReservation}
+          isOpen={!!confirmedReservation}
+          onClose={() => setConfirmedReservation(null)}
+        />
       )}
     </div>
   );

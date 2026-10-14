@@ -11,8 +11,10 @@ import {
   LogOut,
   Car,
   Shield,
-  Briefcase
+  Briefcase,
+  CalendarDays
 } from 'lucide-react';
+import { OperatorReservationManager } from '../components/booking/OperatorReservationManager';
 
 export const ProfilePage: React.FC = () => {
   const { user, setUser, logout } = useAuthStore();
@@ -158,6 +160,13 @@ export const ProfilePage: React.FC = () => {
               <Car className="w-3.5 h-3.5 text-[#0F766E]" />
               <span>Manage Vehicles</span>
             </Link>
+            <Link
+              to="/bookings"
+              className="px-3.5 py-2 rounded-xl bg-[#0F766E]/10 hover:bg-[#0F766E]/20 text-[#0F766E] text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span>My Bookings</span>
+            </Link>
           </div>
         </div>
 
@@ -265,6 +274,11 @@ export const ProfilePage: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* Operator and Admin Reservation Hub */}
+      {(user?.role === 'operator' || user?.role === 'admin') && (
+        <OperatorReservationManager isAdmin={user.role === 'admin'} />
+      )}
     </div>
   );
 };

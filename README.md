@@ -112,8 +112,95 @@ docker compose exec backend pytest -v
 
 ---
 
+---
+
+## 📅 Phase 4: Parking Reservation and Booking Management
+
+### 1. Driver Booking Workflow
+1. Browse parking facilities on the discovery map at `http://localhost:5174/parking`.
+2. Click on any facility card to open its **Facility Details** view.
+3. Click **Reserve Parking** to open the real-time booking gateway modal.
+4. Select reservation date, start time, and end time.
+5. Select a registered vehicle (or quickly add a new one).
+6. Choose space allocation:
+   - **Auto Assign**: Automatic allocation of best available standard, EV, or compact bay.
+   - **Select Spot**: Interactive spot grid displaying real-time availability for the chosen time window.
+7. Review the live server-calculated fee breakdown (duration, rate, billed hours, and estimated total).
+8. Click **Confirm Booking** — spot capacity is locked with a unique human-readable booking reference (e.g. `SPF-20261014-9DF2B1`).
+9. View your booking confirmation receipt and access your reservation history under **My Bookings** (`/bookings`).
+
+### 2. Double-Booking Prevention & Concurrency
+- **Server-Side Validation**: Backend independently recalculates durations, validates that times are in the future, and enforces facility operating hours.
+- **Row-Level Locking**: Uses `SELECT ... FOR UPDATE` serialization during space assignment to prevent race conditions during concurrent booking requests.
+- **Overlapping Check**: A reservation is considered conflicting if `start_time < existing.end_time AND end_time > existing.start_time` for active statuses (`CONFIRMED`, `ACTIVE`, `PENDING`).
+- **Adjacent Reservations**: Permitted without artificial gap constraints.
+
+### 3. Cancellation Policy
+- Drivers can cancel any confirmed reservation **before the scheduled start time** (`now < start_time`).
+- Cancellations after the start time or on completed bookings are rejected by the backend.
+- When cancelled, the reservation status is set to `CANCELLED`, recording `cancelled_at` and `cancellation_reason`, immediately releasing the bay back into available inventory.
+
+### 4. Operator & Admin Reservation Hub
+- **Operators**: Access live reservations for facilities they own via the Profile Page or `/api/v1/operator/reservations`. Operators can mark reservations as `COMPLETED` or `NO_SHOW`.
+- **Admins**: Platform-wide audit log of all bookings across all facilities with status and date filtering via `/api/v1/admin/reservations`.
+
+### 5. API Endpoints
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/v1/reservations` | Create a confirmed reservation with locked spot | Yes (Bearer) |
+| `POST` | `/api/v1/reservations/estimate` | Live server price calculation & availability | Yes (Bearer) |
+| `GET` | `/api/v1/reservations/me` | List driver's reservations with status filters | Yes (Bearer) |
+| `GET` | `/api/v1/reservations/{id}` | Get single reservation details (isolated to owner) | Yes (Bearer) |
+| `POST` | `/api/v1/reservations/{id}/cancel` | Cancel an eligible reservation before start time | Yes (Bearer) |
+| `GET` | `/api/v1/facilities/{id}/availability` | Facility-level capacity & availability tier | No |
+| `GET` | `/api/v1/facilities/{id}/spaces/availability` | Spot-by-spot availability for a time window | No |
+| `GET` | `/api/v1/operator/reservations` | List reservations for facilities owned by operator | Yes (Operator) |
+| `PATCH` | `/api/v1/operator/reservations/{id}/status` | Mark reservation as `COMPLETED` or `NO_SHOW` | Yes (Operator) |
+| `GET` | `/api/v1/admin/reservations` | Global platform reservation audit | Yes (Admin) |
+
+---
+
+## 💳 Phase 5: Digital Payment Gateway Integration — Razorpay
+
+### 1. Razorpay Payment Architecture
+- **Server-Authoritative Pricing**: Total amounts are strictly retrieved from the database reservation record and converted to paise (`int(round(amount * 100))`). Client prices are never trusted.
+- **HMAC SHA256 Signature Verification**: Payment callbacks are strictly verified server-side using constant-time comparison `hmac.compare_digest` with `RAZORPAY_KEY_SECRET`.
+- **Digital Receipt Generation**: A verified successful payment generates a digital `Receipt` record with a unique receipt number (e.g. `RCP-SPF-...`), itemized subtotal, zero hidden fees, and timestamp.
+- **Idempotency**: Repeated callbacks or verification requests safely return the existing payment and receipt without creating duplicate transactions or receipts.
+- **Webhook Integration**: `POST /api/v1/webhooks/razorpay` verifies `X-Razorpay-Signature` against `RAZORPAY_WEBHOOK_SECRET` and handles `payment.captured` and `payment.failed` events.
+
+### 2. Razorpay API Endpoints
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/v1/reservations/{id}/payment/order` | Create server-verified Razorpay order for booking | Yes (Bearer) |
+| `POST` | `/api/v1/payments/verify` | Verify Razorpay payment signature & generate receipt | Yes (Bearer) |
+| `GET` | `/api/v1/reservations/{id}/payment` | Get payment status for a reservation | Yes (Bearer) |
+| `GET` | `/api/v1/reservations/{id}/receipt` | Retrieve official payment receipt | Yes (Bearer) |
+| `GET` | `/api/v1/payments/me` | List authenticated driver's payment history | Yes (Bearer) |
+| `POST` | `/api/v1/webhooks/razorpay` | Process Razorpay webhook notifications | No (Signature Verified) |
+
+### 3. Razorpay Test-Mode Configuration
+Add your Razorpay test credentials to your `.env` file (or backend environment):
+```env
+RAZORPAY_KEY_ID=rzp_test_your_key_id_here
+RAZORPAY_KEY_SECRET=your_key_secret_here
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret_here
+RAZORPAY_MODE=test
+```
+> **Obtaining Test Keys**: Sign up at [dashboard.razorpay.com](https://dashboard.razorpay.com), navigate to **Settings > API Keys**, and generate test mode keys.
+
+### 4. Running Payment Automated Tests
+```bash
+docker compose exec backend pytest -v tests/test_payments.py
+```
+
+---
+
 ## 📌 Development Phase Status
 - [x] **Phase 0 & 1: Architecture, Database Models, Relational Schemas, Migrations, Docker Containerization**
-- [x] **Phase 2: Authentication & User Profiles, JWT Security, RBAC Enforcement, Vehicle Management, Polished UI**
-- [ ] **Phase 3: Interactive Map, Facility Discovery, Spot Reservations, Razorpay Payments**
-- [ ] **Phase 4: AI Predictive Occupancy Engine, Operator Dashboard, Admin Portal**
+- [x] **Phase 2: Authentication & User Profiles, JWT Security, RBAC Enforcement, Vehicle Management**
+- [x] **Phase 3: Interactive Map, Facility Discovery, Distance Calculation, Mumbai Facilities Dataset**
+- [x] **Phase 4: Parking Reservation & Booking Management, Double-Booking Prevention, Driver & Operator Hub**
+- [x] **Phase 5: Digital Payment Gateway Integration (Razorpay), Order Creation, Signature Verification & Receipts**
+- [ ] **Phase 6: AI Predictive Occupancy Engine**
+

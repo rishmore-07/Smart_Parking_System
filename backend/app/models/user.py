@@ -34,3 +34,4 @@ class User(Base, TimestampMixin):
     favourites = relationship("Favourite", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
     audit_logs = relationship("AuditLog", back_populates="user")
+    payments = relationship("Payment", back_populates="user")

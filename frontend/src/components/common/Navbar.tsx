@@ -91,14 +91,15 @@ export const Navbar: React.FC = () => {
                 <span>My Vehicles</span>
               </Link>
 
-              <div 
-                className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1.5 cursor-not-allowed"
-                title="Bookings management will be available in Phase 3"
+              <Link
+                to="/bookings"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors ${
+                  location.pathname === '/bookings' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
               >
-                <CalendarDays className="w-4 h-4 text-slate-300" />
+                <CalendarDays className="w-4 h-4 text-[#0F766E]" />
                 <span>My Bookings</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-400 font-normal">Phase 3</span>
-              </div>
+              </Link>
 
               <div 
                 className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 flex items-center space-x-1.5 cursor-not-allowed"
@@ -227,10 +228,15 @@ export const Navbar: React.FC = () => {
               >
                 My Vehicles
               </Link>
-              <div className="px-3 py-2 text-sm font-medium text-slate-400 flex items-center justify-between">
-                <span>My Bookings</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100">Phase 3</span>
-              </div>
+              <Link
+                to="/bookings"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2 rounded-lg text-sm font-medium ${
+                  location.pathname === '/bookings' ? 'text-[#0F766E] bg-[#0F766E]/5 font-semibold' : 'text-slate-600'
+                }`}
+              >
+                My Bookings
+              </Link>
               <div className="px-3 py-2 text-sm font-medium text-slate-400 flex items-center justify-between">
                 <span>Favourites</span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100">Phase 3</span>

@@ -6,12 +6,13 @@ from app.models.base import TimestampMixin
 
 
 class ReservationStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    ACTIVE = "active"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-    EXPIRED = "expired"
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
+    NO_SHOW = "NO_SHOW"
 
 
 class Reservation(Base, TimestampMixin):
@@ -27,10 +28,14 @@ class Reservation(Base, TimestampMixin):
     start_time = Column(DateTime, nullable=False, index=True)
     end_time = Column(DateTime, nullable=False, index=True)
     total_amount = Column(Float, nullable=False)
+    rate_per_hour = Column(Float, nullable=True)
+    currency = Column(String(10), default="INR", nullable=False)
     status = Column(Enum(ReservationStatus), default=ReservationStatus.CONFIRMED, nullable=False, index=True)
 
     check_in_time = Column(DateTime, nullable=True)
     check_out_time = Column(DateTime, nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    cancellation_reason = Column(String(255), nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="reservations")
