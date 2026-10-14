@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, selectinload
 from app.repositories.base_repo import BaseRepository
 from app.models.payment import Payment, Receipt, PaymentStatus
 
@@ -12,8 +12,8 @@ class PaymentRepository(BaseRepository[Payment]):
         query = (
             db.query(Payment)
             .options(
-                joinedload(Payment.receipt),
-                joinedload(Payment.reservation),
+                selectinload(Payment.receipt),
+                selectinload(Payment.reservation),
             )
             .filter(Payment.reservation_id == reservation_id)
         )
@@ -25,8 +25,8 @@ class PaymentRepository(BaseRepository[Payment]):
         query = (
             db.query(Payment)
             .options(
-                joinedload(Payment.receipt),
-                joinedload(Payment.reservation),
+                selectinload(Payment.receipt),
+                selectinload(Payment.reservation),
             )
             .filter(Payment.razorpay_order_id == razorpay_order_id)
         )
@@ -37,7 +37,7 @@ class PaymentRepository(BaseRepository[Payment]):
     def get_by_payment_id(self, db: Session, razorpay_payment_id: str) -> Optional[Payment]:
         return (
             db.query(Payment)
-            .options(joinedload(Payment.receipt))
+            .options(selectinload(Payment.receipt))
             .filter(Payment.razorpay_payment_id == razorpay_payment_id)
             .first()
         )
@@ -46,8 +46,8 @@ class PaymentRepository(BaseRepository[Payment]):
         return (
             db.query(Payment)
             .options(
-                joinedload(Payment.receipt),
-                joinedload(Payment.reservation),
+                selectinload(Payment.receipt),
+                selectinload(Payment.reservation),
             )
             .filter(Payment.user_id == user_id)
             .order_by(Payment.created_at.desc())
@@ -62,7 +62,7 @@ class PaymentRepository(BaseRepository[Payment]):
     def get_receipt_by_reservation_id(self, db: Session, reservation_id: int) -> Optional[Receipt]:
         payment = (
             db.query(Payment)
-            .options(joinedload(Payment.receipt))
+            .options(selectinload(Payment.receipt))
             .filter(Payment.reservation_id == reservation_id)
             .first()
         )

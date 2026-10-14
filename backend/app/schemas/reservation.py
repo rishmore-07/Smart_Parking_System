@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Optional, List
+from datetime import datetime, time
+from typing import Optional, List, Union
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from app.models.reservation import ReservationStatus
 from app.models.spot import SpotType
@@ -14,8 +14,8 @@ class FacilityBrief(BaseModel):
     latitude: float
     longitude: float
     price_per_hour: float
-    opening_time: Optional[str] = None
-    closing_time: Optional[str] = None
+    opening_time: Optional[Union[time, str]] = None
+    closing_time: Optional[Union[time, str]] = None
 
 
 class SpotBrief(BaseModel):
